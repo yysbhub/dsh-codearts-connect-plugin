@@ -1,0 +1,7 @@
+# Register the CodeArts Agent (码道) provider without changing the profile's
+# default model. The plugin owns its own loopback OpenAI-compatible shim and
+# reuses the CodeArts desktop app's login session; no separate bridge process
+# and no `llm-pi-ai` provider entry are needed.
+- insert:
+    - id: llm-codearts
+      name: dsh-codearts-connect

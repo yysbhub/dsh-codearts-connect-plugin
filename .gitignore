@@ -1,0 +1,30 @@
+# ── 凭据与会话（绝对不能入库）────────────────────────────────────────
+# 插件运行时写出的登录态：含临时 AK/SK、refresh token 与 DPoP 私钥。
+.codearts-session.json
+*.codearts-session.json
+**/.codearts-session.json*
+.codearts-session.json.tmp
+*state.json
+
+# 环境变量文件
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.pfx
+
+# ── 构建产物 ────────────────────────────────────────────────────────
+dist/
+*.tgz
+
+# ── 本机与编辑器杂项 ────────────────────────────────────────────────
+node_modules/
+.DS_Store
+Thumbs.db
+*.log
+.vscode/
+.idea/
+
+# ── 文档截图（可能包含会话内容与本机路径，不入库）───────────────────
+docs/live-ok.png

@@ -1,0 +1,71 @@
+# DeepSeek-V4.1-Flash 指挥 CodeArts GLM-5.3 干活的配置
+#
+# 思路：让 1M 上下文的大模型当"主脑"负责规划、读代码、汇总；把具体实现
+# 委派给 203K 上下文的 GLM-5.3 子代理。主脑的完整对话历史不会传给 GLM-5.3，
+# 只有委派任务本身和结果返回，因此 GLM-5.3 的窗口不会被 orchestration 历史
+# 占满。
+#
+# 用法：把下面的片段并入 profile 的 cordis.patch.yml 的 `insert:` 列表
+# （或与既有 insert 块合并）。注意 YAML 里 id 必须唯一。
+
+# ── 1. 启用委派工具链 ────────────────────────────────────────────────
+# web bundle 默认把 subagent 工具全部禁用；用户层先打开它们。
+- id: tool-subagent
+  disabled: false
+- id: tool-subagent-control
+  disabled: false
+- id: tool-subagent-list-agents
+  disabled: false
+
+# ── 2. 把 spawn 工具的默认子代理钉到 CodeArts GLM-5.3 ─────────────────
+# `agentOptions` 是 tool-subagent 的配置项，会成为每次委派的子代理默认路由。
+# 主脑是 step-5-preview / deepseek-v4.1-flash，子代理固定落到 codearts/glm-5.3。
+# 这样模型无需显式传 provider/model，也不会挑错路由。
+- id: tool-subagent-spawn
+  name: '@deepseek-ai/dsh-tool-subagent'
+  config:
+    provider: spawn
+    toolName: subagent
+    maxDepth: 1
+    agentOptions:
+      provider: codearts
+      model: glm-5.3
+
+# ── 3. 注册一个"指挥模式"agent preset ────────────────────────────────
+# preset 只影响由它创建的会话；默认 preset 仍是 standard，不影响既有会话。
+- insert:
+    - id: preset-codearts-orchestrator
+      name: '@deepseek-ai/dsh-agent-preset'
+      config:
+        id: codearts-orchestrator
+        name: 大上下文指挥 CodeArts
+        description: 主脑使用 1M 上下文模型规划，实现细节委派给 GLM-5.3
+        plugins:
+          - name: '@deepseek-ai/dsh-agent-default-model'
+            config:
+              provider: workbuddy-ai
+              model: deepseek-v4.1-flash
+              reasoningEffort: low
+
+# 可选：直连 GLM-5.3 的单模型 preset，用于快速验证或不想委派的场景
+    - id: preset-codearts-direct
+      name: '@deepseek-ai/dsh-agent-preset'
+      config:
+        id: codearts-direct
+        name: 直连 CodeArts GLM-5.3
+        description: 单模型会话，直接使用 GLM-5.3（203K 上下文）
+        plugins:
+          - name: '@deepseek-ai/dsh-agent-default-model'
+            config:
+              provider: codearts
+              model: glm-5.3
+              reasoningEffort: low
+
+# ── 4. 默认 provider 改为码道（可选）──────────────────────────────────
+# 若希望新建会话默认就用码道，改这一行；否则保持原样。
+# - id: agent-default-model
+#   name: "@deepseek-ai/dsh-agent-default-model"
+#   config:
+#     provider: codearts
+#     model: glm-5.3
+#     reasoningEffort: low
