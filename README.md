@@ -25,10 +25,17 @@ https://snap-access.cn-north-4.myhuaweicloud.com/api/v2/chat/completions
 
 ## 安装
 
+从仓库克隆后装进 profile：
+
 ```powershell
-# 插件已经放在 ~/.dsh/plugins/dsh-codearts-connect
+git clone https://github.com/yysbhub/dsh-codearts-connect-plugin.git `
+  "$env:USERPROFILE\.dsh\plugins\dsh-codearts-connect"
 dsh plugin --profile desktop add "file:$env:USERPROFILE\.dsh\plugins\dsh-codearts-connect"
 ```
+
+也可以从 Releases 里下载 `dsh-codearts-connect-<version>.zip` 解包到同一位置，
+在目标机上运行其中自带的 `scripts/install-windows.ps1`（它会解包、注册、
+补 profile bundles 并检查登录态，可重复执行）。
 
 并在 profile 的 `cordis.patch.yml` 或 bundle 列表中挂载：
 
@@ -260,5 +267,14 @@ node "$env:USERPROFILE\.dsh\plugins\dsh-codearts-connect\bin.js" login
 ## 安全
 
 - shim 只监听 `127.0.0.1`，并要求每次进程随机生成的 Bearer token；
-- session 文档含临时 AK/SK 和 refresh token，写入时权限为 `0600`；
-- 插件不读取或改写码道自己的 `state.vscdb`，只通过 `login` 读取一次。
+- session 文档含临时 AK/SK、refresh token 与 DPoP 私钥，写入时权限为 `0600`，
+  且已被 `.gitignore` 排除，**不要提交进任何仓库**；
+- 插件对码道 `state.vscdb` 只做两种只读访问：发请求前查一次
+  `userInfoKey.id`（用于跟随账号切换），以及 `bin.js models` / `login`
+  读取目录与登录态；从不写入或改写它；
+- 插件不轮换码道的 refresh token（那是一次的，轮换会让客户端掉线），
+  只在凭据过期或账号变更时重新采纳客户端自己维护的登录态。
+
+## 许可
+
+MIT，见 [LICENSE](LICENSE)。
